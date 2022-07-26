@@ -18,34 +18,61 @@ by Brian Goetz
 * It is far easier to design a class to be thread-safe than to retrofit it for safety later.
 * The same object-oriented techniques that help you write well-organized, maintainable classes -- such as encapsulation and data hiding -- can also help you create thread-safe classes.
 * A program that consists entirely of thread-safe classes may not be thread-safe, and a thread-safe program may contain classes that are not thread-safe.
+* There are three ways to fix it:
+*  - Don’t share the state variable across threads;
+*  - Make the state variable immutable; or
+* - Use synchronization whenever accessing the state variable.
 
 ##### 2.1: What is thread safety?
 
 * A class is thread-safe if it behaves correctly when accessed from multiple threads, regardless of their scheduling or interleaving of execution, and with no additional synchronization or coordination by the calling code.
 * Thread-safe classes encapsulate any needed synchronization so that clients need not provide their own.
+* *Stateless objects are always thread-safe*
 
 ##### 2.2: Atomicity
 
-* A race condition occurs when the correctness of a computation depends on the relative timing or interleaving of multiple threads.
+* A race condition occurs when the correctness of a computation depends on the relative *timing* or interleaving of multiple threads. [https://stackoverflow.com/questions/34510/what-is-a-race-condition](https://stackoverflow.com/questions/34510/what-is-a-race-condition)
 * The most common type of race condition is *check-then-act*, where an observation could have become invalid between the time you observed it and the time you acted on it, causing a problem.
 * Read-modify-write operations require knowing a previous value and ensuring that no one else changes or uses that value while you are in mid-update.
 * Check-then-act and read-modify-write sequences are compound actions, or sequences that must be executed atomically in order to remain thread-safe.
+* Solutions
+Compound actions: use compound saction to prevent race condition 
+<code>private final AtomicLong count = new AtomicLong(0);</code>
+
+
 
 ##### 2.3: Locking
-
+* No guarantee multiple atomic variables work in synchronously, thus we need to for *Locks* along with *Atomic variables*.
 * Mutual exclusion locks, or mutexes, means that at most one thread may own a lock. If thread A attempts to acquire a lock by thread B, it blocks until B releases it.
-* Reentrancy means that locks are acquired on a per-thread rather than per-invocation basis. Each lock is associated with an acquisition count and an owning thread.
+
+##### 2.3.1: Intrinsic locks (aka monitor lock)
+* <code>Synchronized</code> block or <code>synchronized</code> method is built around an internal entity known as the intrinsic lock or monitor lock 
+* Intrinsic locks play a role in both aspects of synchronization: enforcing exclusive access to an object's state and establishing *happens-before relationships* that are essential to visibility.
+* Problem: If entire method is <code>Synchronized</code> that may lead to poor performance.
+* Solution: Either we need to go for <code>Synchronized</code> block which is  <code>Reentrant</code> in nature.
+
+##### 2.3.2: Reentrancy
+
+* Reentrancy means that locks are acquired on a per-thread(ones a thread acquires the lock of a object no other thread can access the same, even though other thread calling other syncronized method)  rather than per-invocation basis. eg. [https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/java-intrinsic-locks.html](https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/java-intrinsic-locks.html)
+* Each lock is associated with an acquisition count and an owning thread(maintains a countdown internally).
 
 ##### 2.4: Guarding state with locks
+* Just wrapping the compound action with a synchronized block is not sufficient; if synchronization is used to coordinate access to a variable, it is needed *everywhere that variable is accessed*.
+* It is a common mistake to assume that synchronization needs to be used only
+when writing to shared variables; this is simply not true.
+* Every mutable state/instance variable that may be accessed by more than one thread, all accesses to that variable must be performed by the same lock held. The variable is *guarded* by the lock.
+* Not all data needs to be guarded by locks—only mutable data that will be
+accessed from multiple threads.
+* When a class has invariants(multiple variables) that involve more than one state variable, we must ensure that each variable participating in the invariant must be guarded by the same lock.
+* synchronized methods can make individual operations atomic, additional locking is required when multiple operations are combined into a compound action, At the same
+time, synchronizing every method can lead to liveness or performance problems, like <code>Vector</code> class.
 
-* For each mutable state variable that may be accessed by more than one thread, all accesses to that variable must be performed by the same lock held. The variable is *guarded* by the lock.
-* When a class has invariants that involve more than one state variable, we must ensure that each variable participating in the invariant must be guarded by the same lock.
-
-##### 2.5: Liveness and performance
-
+##### 2.5: Liveness and performance(too much synchronization)
+* Narrow the scope of the *synchronized* block.
+* When using *synchronization* during updating and setting the variable, do not required to use *Atomic*, using two different synchronization mechanisms would be confusing and would offer no performance or safety benefit.
 * Acquiring and releasing a lock has some overhead, so do not break down guarded blocks too far, even if this would not compromise atomicity.
-* When implementing a synchronization policy, resist the temptation to prematurely sacrifice simplicity (potentially compromising safety) for the sake of performance.
-* Avoid holding locks during lengthy computations or operations at risk of not completing quickly, such as when performing disk or network I/O.
+* When implementing a synchronization policy think about performance also.
+* Avoid holding locks during lengthy computations or operations at risk of not completing quickly, such as when performing disk or network I/O, it may lead to poor performance.
 
 #### Chapter 3: Sharing Objects
 
