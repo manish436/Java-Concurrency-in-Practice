@@ -56,7 +56,7 @@ Compound actions: use compound saction to prevent race condition
 * Reentrancy means that locks are acquired on a per-thread(ones a thread acquires the lock of a object no other thread can access the same, even though other thread calling other syncronized method)  rather than per-invocation basis. eg. [https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/java-intrinsic-locks.html](https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/java-intrinsic-locks.html)
 * Each lock is associated with an acquisition count and an owning thread(maintains a countdown internally).
 
-##### 2.4: Guarding state with locks
+##### 2.4: Guarding state with locks(synchronized block everywhere that variable is accessed/updated)
 * Just wrapping the compound action with a synchronized block is not sufficient; if synchronization is used to coordinate access to a variable, it is needed *everywhere that variable is accessed*.
 * It is a common mistake to assume that synchronization needs to be used only
 when writing to shared variables; this is simply not true.
